@@ -1,11 +1,4 @@
 // api/check-address.js
-// ---------------------------------------------------------------------------
-// Vercel Serverless Function
-// Called by the frontend when the user clicks Confirm.
-// Receives the full Google-formatted address, extracts the street portion,
-// and looks it up in the Supabase addresses table.
-// ---------------------------------------------------------------------------
-
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -14,19 +7,16 @@ const supabase = createClient(
 );
 
 /**
- * Extracts just the street address from a Google formatted_address.
- * Google returns: "6308 Mellow Twilight Court, Columbia, MD 21044, USA"
- * We want:        "6308 MELLOW TWILIGHT COURT"
- *
- * Strategy: split on the first comma, take the first part, uppercase it.
+ * Extracts the street part and cleans it for the best chance of a match.
  */
-function extractStreet(fullAddress) {
-  const street = fullAddress.split(',')[0].trim().toUpperCase();
-  return street;
+function cleanStreet(fullAddress) {
+  if (!fullAddress) return "";
+  // Take everything before the first comma, trim spaces, and make it uppercase
+  return fullAddress.split(',')[0].trim().toUpperCase();
 }
 
 export default async function handler(req, res) {
-  // Only allow POST
+  // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -37,14 +27,20 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing or invalid address' });
   }
 
-  const street = extractStreet(address);
+  // Clean the input (e.g., "6345 Dobbin Rd, Columbia, MD" -> "6345 DOBBIN RD")
+  const searchStreet = cleanStreet(address);
 
   try {
-    // Query Supabase: look for an exact match on street_address
+    /**
+     * DATABASE LOOKUP LOGIC
+     * We use .ilike() with % wildcards.
+     * This checks if the street_address in Supabase is contained within 
+     * the cleaned street name from Google.
+     */
     const { data, error } = await supabase
       .from('addresses')
       .select('street_address')
-      .eq('street_address', street)
+      .ilike('street_address', `%${searchStreet}%`)
       .limit(1);
 
     if (error) {
@@ -52,11 +48,12 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Database error' });
     }
 
+    // If data has items, we found a match!
     const matched = data && data.length > 0;
 
     return res.status(200).json({
       matched,
-      street,          // echo back so frontend can show/debug it
+      searchStreet,    // Helps you see what was actually searched
       fullAddress: address
     });
 
