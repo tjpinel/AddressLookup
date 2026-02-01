@@ -27,23 +27,24 @@ export default async function handler(req, res) {
   let searchStreet = address.split(',')[0].trim().toUpperCase();
   searchStreet = searchStreet.replace(/\b(RD|ROAD|ST|STREET|LN|LANE|DR|DRIVE|CT|COURT|CIR|CIRCLE|WAY|AVE|AVENUE)\b/g, "").trim();
 
-  try {
-    // 3. DATABASE LOOKUP
-    // We search for a row where our street_address STARTS WITH the numbers and name
+try {
+    // We added 'Village' to the select part here!
     const { data, error } = await supabase
       .from('addresses')
-      .select('street_address')
+      .select('street_address, Village') 
       .ilike('street_address', `%${searchStreet}%`)
       .limit(1);
 
     if (error) throw error;
 
-    return res.status(200).json({
-      matched: data && data.length > 0,
-      cleanedSearchTerm: searchStreet,
-      originalInput: address
-    });
+    const matched = data && data.length > 0;
 
+    return res.status(200).json({
+      matched: matched,
+      village: matched ? data[0].Village : null, // Send the Village back to the site
+      searchStreet
+    });
+  
   } catch (err) {
     console.error('Lookup error:', err);
     return res.status(500).json({ error: 'Database error' });
