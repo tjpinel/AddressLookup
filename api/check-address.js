@@ -6,59 +6,40 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY
 );
 
-/**
- * Extracts the street part and cleans it for the best chance of a match.
- */
-function cleanStreet(fullAddress) {
-  if (!fullAddress) return "";
-  // Take everything before the first comma, trim spaces, and make it uppercase
-  return fullAddress.split(',')[0].trim().toUpperCase();
-}
-
 export default async function handler(req, res) {
-  // Only allow POST requests
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { address } = req.body;
+  if (!address) return res.status(400).json({ error: 'No address provided' });
 
-  if (!address || typeof address !== 'string') {
-    return res.status(400).json({ error: 'Missing or invalid address' });
+  // 1. THE MARYLAND VIBE CHECK
+  // If the Google address doesn't contain "MD" or "Maryland", it's an automatic "No."
+  const isMaryland = address.includes(', MD') || address.includes('Maryland');
+  
+  if (!isMaryland) {
+    return res.status(200).json({ matched: false, message: "Outside of Maryland" });
   }
 
-  // Clean the input (e.g., "6345 Dobbin Rd, Columbia, MD" -> "6345 DOBBIN RD")
-  const searchStreet = cleanStreet(address);
+  // 2. CLEAN THE STREET
+  const searchStreet = address.split(',')[0].trim().toUpperCase();
 
   try {
-    /**
-     * DATABASE LOOKUP LOGIC
-     * We use .ilike() with % wildcards.
-     * This checks if the street_address in Supabase is contained within 
-     * the cleaned street name from Google.
-     */
+    // 3. DATABASE LOOKUP
     const { data, error } = await supabase
       .from('addresses')
       .select('street_address')
       .ilike('street_address', `%${searchStreet}%`)
       .limit(1);
 
-    if (error) {
-      console.error('Supabase query error:', error);
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    // If data has items, we found a match!
-    const matched = data && data.length > 0;
+    if (error) throw error;
 
     return res.status(200).json({
-      matched,
-      searchStreet,    // Helps you see what was actually searched
-      fullAddress: address
+      matched: data && data.length > 0,
+      searchStreet
     });
 
   } catch (err) {
-    console.error('Unexpected error:', err);
-    return res.status(500).json({ error: 'Something went wrong' });
+    console.error('Error:', err);
+    return res.status(500).json({ error: 'Database check failed' });
   }
 }
