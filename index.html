@@ -228,7 +228,7 @@ waitForGoogle();
 function initAutocomplete() {
   const autocomplete = new google.maps.places.Autocomplete(input, {
     componentRestrictions: { country: 'US' },
-    fields: ['formatted_address'],
+    fields: ['formatted_address', 'address_components'],
     types: ['address'],
   });
 
