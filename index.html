@@ -196,32 +196,6 @@
 </div>
 
 <script>
-// ── address list & matching ──────────────────────────────────────────────
-const TARGET_ADDRESSES = [
-  "6135 Triangle Dr, Columbia, MD 21044",
-  "11618 Sun Cir Way, Columbia, MD 21044",
-  "10217 Rutland Round Rd, Columbia, MD 21044",
-  "9250 Seawind Ct, Columbia, MD 21045",
-  "8834 Sandrope Ct, Columbia, MD 21046",
-  "5410 Phelps Luck Dr, Columbia, MD 21045",
-  "9485 Honeysalt Row, Columbia, MD 21045",
-  "9559 Highwind Ct, Columbia, MD 21045",
-  "9481 Old Deep Ct, Columbia, MD 21045",
-  "5559 Oakland Mills Rd, Columbia, MD 21045",
-];
-
-function normalize(addr) {
-  return addr.toLowerCase().replace(/,\s*usa$/, "").replace(/\s+/g, " ").trim();
-}
-
-const NORMALIZED_TARGETS = TARGET_ADDRESSES.map(normalize);
-
-function checkAddress(inputAddress) {
-  const normalizedInput = normalize(inputAddress);
-  const matched = NORMALIZED_TARGETS.includes(normalizedInput);
-  return { matched, normalizedInput };
-}
-
 // ── state ────────────────────────────────────────────────────────────────
 let selectedAddress = null;
 
@@ -242,7 +216,6 @@ confirmBtn.addEventListener('click', () => {
 });
 
 // ── Google Places Autocomplete ───────────────────────────────────────────
-// Poll until google.maps is available (it loads async)
 function waitForGoogle() {
   if (window.google && window.google.maps && window.google.maps.places) {
     initAutocomplete();
@@ -268,21 +241,50 @@ function initAutocomplete() {
   });
 }
 
-// ── run the address check ────────────────────────────────────────────────
-function runCheck(address) {
-  const result = checkAddress(address);
+// ── run the address check (calls the serverless API) ────────────────────
+async function runCheck(address) {
+  // Show loading state
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = 'Checking...';
+  document.getElementById('resultSection').style.display = 'none';
 
-  document.getElementById('resultSection').style.display = 'block';
+  try {
+    const response = await fetch('/api/check-address', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address }),
+    });
 
-  if (result.matched) {
-    document.getElementById('matchedPanel').style.display   = 'block';
-    document.getElementById('notMatchedPanel').style.display = 'none';
-    document.getElementById('matchedAddress').textContent    = 'Matched: ' + address;
-  } else {
+    if (!response.ok) {
+      throw new Error('API returned ' + response.status);
+    }
+
+    const result = await response.json();
+
+    // Show results
+    document.getElementById('resultSection').style.display = 'block';
+
+    if (result.matched) {
+      document.getElementById('matchedPanel').style.display   = 'block';
+      document.getElementById('notMatchedPanel').style.display = 'none';
+      document.getElementById('matchedAddress').textContent    = 'Matched: ' + address;
+    } else {
+      document.getElementById('matchedPanel').style.display   = 'none';
+      document.getElementById('notMatchedPanel').style.display = 'block';
+      document.getElementById('notMatchedAddress').textContent = 'Checked: ' + address;
+    }
+
+  } catch (err) {
+    console.error('Check failed:', err);
+    document.getElementById('resultSection').style.display = 'block';
     document.getElementById('matchedPanel').style.display   = 'none';
     document.getElementById('notMatchedPanel').style.display = 'block';
-    document.getElementById('notMatchedAddress').textContent = 'Checked: ' + address;
+    document.getElementById('notMatchedAddress').textContent = 'Error — please try again.';
   }
+
+  // Reset button
+  confirmBtn.textContent = 'Confirm';
+  confirmBtn.disabled = false;
 }
 </script>
 
