@@ -6,11 +6,7 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY
 );
 
-// Your specific Howard County / Maryland ZIP codes
-const ALLOWED_ZIPS = [
-  '21044', '21045', '21046', '21042', '21043', 
-  '21075', '20723', '20794', '20701', '21029', '20759'
-];
+const ALLOWED_ZIPS = ['21044', '21045', '21046', '21042', '21043', '21075', '20723', '20794', '20701', '21029', '20759'];
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -18,24 +14,22 @@ export default async function handler(req, res) {
   const { address } = req.body;
   if (!address) return res.status(400).json({ error: 'No address provided' });
 
-  // 1. THE ZIP CODE VIBE CHECK
-  // We check if the Google address contains any of our allowed ZIPs
-  const hasValidZip = ALLOWED_ZIPS.some(zip => address.includes(zip));
-  
-  if (!hasValidZip) {
-    return res.status(200).json({ 
-      matched: false, 
-      message: "Address is outside of our service area (ZIP check)." 
-    });
+  const upperAddress = address.toUpperCase();
+
+  // 1. MARYLAND GATEKEEPER
+  if (!upperAddress.includes('MD') && !upperAddress.includes('MARYLAND')) {
+    return res.status(200).json({ matched: false, reason: 'Outside Maryland' });
   }
 
-  // 2. CLEAN THE STREET NAME
-  // "6345 Dobbin Rd, Columbia, MD 21045" -> "6345 DOBBIN RD"
-  const searchStreet = address.split(',')[0].trim().toUpperCase();
+  // 2. CLEAN STREET LOGIC (The "Suffix Stripper")
+  // Takes "6345 Dobbin Rd, Columbia..." -> "6345 DOBBIN"
+  // We strip " RD", " ST", " LN", " DR", " CT" etc. to avoid formatting fails.
+  let searchStreet = address.split(',')[0].trim().toUpperCase();
+  searchStreet = searchStreet.replace(/\b(RD|ROAD|ST|STREET|LN|LANE|DR|DRIVE|CT|COURT|CIR|CIRCLE|WAY|AVE|AVENUE)\b/g, "").trim();
 
   try {
     // 3. DATABASE LOOKUP
-    // We search the 'street_address' column in Supabase for a match
+    // We search for a row where our street_address STARTS WITH the numbers and name
     const { data, error } = await supabase
       .from('addresses')
       .select('street_address')
@@ -46,12 +40,12 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       matched: data && data.length > 0,
-      searchStreet,
-      zipConfirmed: true
+      cleanedSearchTerm: searchStreet,
+      originalInput: address
     });
 
   } catch (err) {
-    console.error('Error:', err);
-    return res.status(500).json({ error: 'Database check failed' });
+    console.error('Lookup error:', err);
+    return res.status(500).json({ error: 'Database error' });
   }
 }
