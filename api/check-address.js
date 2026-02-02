@@ -1,4 +1,3 @@
-// api/check-address.js
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -6,33 +5,32 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY
 );
 
-const ALLOWED_ZIPS = ['21044', '21045', '21046', '21042', '21043', '21075', '20723', '20794', '20701', '21029', '20759'];
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { address } = req.body;
   if (!address) return res.status(400).json({ error: 'No address provided' });
 
+  // 1. Maryland Gatekeeper
   const upperAddress = address.toUpperCase();
-
-  // 1. MARYLAND GATEKEEPER
   if (!upperAddress.includes('MD') && !upperAddress.includes('MARYLAND')) {
     return res.status(200).json({ matched: false, reason: 'Outside Maryland' });
   }
 
-  // 2. CLEAN STREET LOGIC (The "Suffix Stripper")
-  // Takes "6345 Dobbin Rd, Columbia..." -> "6345 DOBBIN"
-  // We strip " RD", " ST", " LN", " DR", " CT" etc. to avoid formatting fails.
-  let searchStreet = address.split(',')[0].trim().toUpperCase();
-  searchStreet = searchStreet.replace(/\b(RD|ROAD|ST|STREET|LN|LANE|DR|DRIVE|CT|COURT|CIR|CIRCLE|WAY|AVE|AVENUE)\b/g, "").trim();
+  // 2. Extract House Number and Street Name
+  // Example: "8834 Sandrope Ct, Columbia..." -> ["8834", "SANDROPE"]
+  const parts = address.split(' ');
+  const houseNumber = parts[0]; 
+  const streetName = parts[1] ? parts[1].replace(',', '').toUpperCase() : "";
 
-try {
-    // We added 'Village' to the select part here!
+  try {
+    // 3. The Wildcard Search
+    // Searches for "8834 SANDROPE%" 
+    // This matches "8834 SANDROPE CT" or "8834 SANDROPE COURT"
     const { data, error } = await supabase
       .from('addresses')
-      .select('street_address, Village') 
-      .ilike('street_address', `%${searchStreet}%`)
+      .select('street_address, Village')
+      .ilike('street_address', `${houseNumber} ${streetName}%`)
       .limit(1);
 
     if (error) throw error;
@@ -41,12 +39,12 @@ try {
 
     return res.status(200).json({
       matched: matched,
-      village: matched ? data[0].Village : null, // Send the Village back to the site
-      searchStreet
+      village: matched ? data[0].Village : null,
+      debug: `Found house ${houseNumber} on ${streetName}`
     });
-  
+
   } catch (err) {
-    console.error('Lookup error:', err);
-    return res.status(500).json({ error: 'Database error' });
+    console.error('Supabase error:', err.message);
+    return res.status(500).json({ error: 'Database check failed' });
   }
 }
