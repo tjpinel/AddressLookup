@@ -4,289 +4,102 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Address Lookup</title>
-
-  <!-- Google Maps JavaScript API (Places library) -->
-  <!-- REPLACE YOUR_API_KEY with your actual key -->
-  <script async
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBreE7Ccp95zJ0hF3pmrn1U5l7RSictGl8&libraries=places">
-  </script>
-
+  <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background: #f5f0e8;
-      min-height: 100vh;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 80px 20px;
-      color: #2c2c2c;
-    }
-
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-      padding: 48px 40px;
-      width: 100%;
-      max-width: 540px;
-    }
-
-    h1 {
-      font-size: 1.8rem;
-      color: #2d4a3e;
-      margin-bottom: 8px;
-      font-weight: 600;
-    }
-
-    .subtitle {
-      color: #7a7a7a;
-      font-size: 0.95rem;
-      margin-bottom: 32px;
-    }
-
-    label {
-      display: block;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #4a4a4a;
-      margin-bottom: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    #addressInput {
-      width: 100%;
-      padding: 14px 16px;
-      border: 2px solid #ddd;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-family: inherit;
-      transition: border-color 0.2s;
-      outline: none;
-      background: #fafafa;
-    }
-
-    #addressInput:focus {
-      border-color: #2d4a3e;
-      background: #fff;
-    }
-
-    /* Style the Google Places autocomplete dropdown */
-    .pac-item {
-      padding: 10px 16px;
-      font-size: 0.9rem;
-    }
-    .pac-item:hover {
-      background: #eef5f2;
-    }
-    .pac-item-selected {
-      background: #eef5f2;
-    }
-
-    #confirmBtn {
-      margin-top: 20px;
-      padding: 12px 32px;
-      background: #2d4a3e;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s, opacity 0.2s;
-      font-family: inherit;
-    }
-
-    #confirmBtn:hover:not(:disabled) {
-      background: #1e3528;
-    }
-
-    #confirmBtn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    /* Result panels */
-    #resultSection {
-      display: none;
-      margin-top: 36px;
-      padding-top: 28px;
-      border-top: 2px solid #eee;
-    }
-
-    .result-panel {
-      display: none;
-      padding: 24px;
-      border-radius: 10px;
-      font-size: 1rem;
-      line-height: 1.6;
-    }
-
-    #matchedPanel {
-      background: #eef5f2;
-      border: 1px solid #c5ddd3;
-      color: #1e3528;
-    }
-
-    #notMatchedPanel {
-      background: #fdf3f0;
-      border: 1px solid #e8c4b8;
-      color: #6b3a2a;
-    }
-
-    .result-panel .result-icon {
-      font-size: 1.6rem;
-      margin-bottom: 8px;
-    }
-
-    .result-panel .result-title {
-      font-weight: 700;
-      font-size: 1.1rem;
-      margin-bottom: 6px;
-    }
-
-    .result-panel .result-address {
-      font-size: 0.85rem;
-      opacity: 0.7;
-      margin-top: 10px;
-      font-style: italic;
-    }
+    body { font-family: 'Segoe UI', sans-serif; background: #f5f0e8; padding: 80px 20px; color: #2c2c2c; display: flex; justify-content: center; }
+    .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); padding: 48px 40px; width: 100%; max-width: 540px; }
+    h1 { color: #2d4a3e; margin-bottom: 8px; }
+    .subtitle { color: #7a7a7a; margin-bottom: 32px; }
+    #addressInput { width: 100%; padding: 14px; border: 2px solid #ddd; border-radius: 8px; margin-bottom: 20px; outline: none; }
+    #addressInput:focus { border-color: #2d4a3e; }
+    #confirmBtn { padding: 12px 32px; background: #2d4a3e; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; }
+    #confirmBtn:disabled { opacity: 0.4; }
+    #resultSection { display: none; margin-top: 30px; }
+    .panel { padding: 20px; border-radius: 10px; line-height: 1.6; display: none; }
+    #matchedPanel { background: #eef5f2; border: 1px solid #c5ddd3; color: #1e3528; }
+    #notMatchedPanel { background: #fdf3f0; border: 1px solid #e8c4b8; color: #6b3a2a; }
   </style>
 </head>
 <body>
 
 <div class="card">
-  <h1>What is your address?</h1>
-  <p class="subtitle">Start typing and select your address from the suggestions.</p>
-
-  <label for="addressInput">Address</label>
-  <input type="text" id="addressInput" placeholder="e.g. 123 Main St, City, ST 00000" autocomplete="off" />
-
+  <h1>Address Lookup</h1>
+  <p class="subtitle">Select your address from the suggestions.</p>
+  <input type="text" id="addressInput" placeholder="Start typing your address..." autocomplete="off" />
   <button id="confirmBtn" disabled>Confirm</button>
 
-  <!-- Result section — hidden until a check runs -->
   <div id="resultSection">
-    <div class="result-panel" id="matchedPanel">
-      <div class="result-icon">✅</div>
-      <div class="result-title">Great news — you're on the list!</div>
-      <div class="result-body">
-        <!-- Put your matched content here -->
-        This is placeholder text for a matched address. Replace this with whatever you want to show.
-      </div>
-      <div class="result-address" id="matchedAddress"></div>
+    <div id="matchedPanel" class="panel">
+      <strong>✅ Success!</strong><br>
+      <span id="villageInfo"></span>
     </div>
-
-    <div class="result-panel" id="notMatchedPanel">
-      <div class="result-icon">❌</div>
-      <div class="result-title">Sorry, your address is not on our list.</div>
-      <div class="result-body">
-        <!-- Put your not-matched content here -->
-        This is placeholder text for an unmatched address. Replace this with whatever you want to show.
-      </div>
-      <div class="result-address" id="notMatchedAddress"></div>
+    <div id="notMatchedPanel" class="panel">
+      <strong>❌ Not Found</strong><br>
+      Sorry, that address is not on our current list.
     </div>
   </div>
 </div>
 
 <script>
-// ── state ────────────────────────────────────────────────────────────────
 let selectedAddress = null;
-
-// ── init ─────────────────────────────────────────────────────────────────
-const input      = document.getElementById('addressInput');
+const input = document.getElementById('addressInput');
 const confirmBtn = document.getElementById('confirmBtn');
-
-// When the user types manually, reset state
-input.addEventListener('input', () => {
-  selectedAddress = null;
-  confirmBtn.disabled = true;
-});
-
-// Confirm button runs the check
-confirmBtn.addEventListener('click', () => {
-  if (!selectedAddress) return;
-  runCheck(selectedAddress);
-});
-
-// ── Google Places Autocomplete ───────────────────────────────────────────
-function waitForGoogle() {
-  if (window.google && window.google.maps && window.google.maps.places) {
-    initAutocomplete();
-  } else {
-    setTimeout(waitForGoogle, 300);
-  }
-}
-waitForGoogle();
 
 function initAutocomplete() {
   const autocomplete = new google.maps.places.Autocomplete(input, {
     componentRestrictions: { country: 'US' },
     fields: ['formatted_address', 'address_components'],
-    types: ['address'],
+    types: ['address']
   });
 
   autocomplete.addListener('place_changed', () => {
     const place = autocomplete.getPlace();
-    if (place && place.formatted_address) {
+    if (place.formatted_address) {
       selectedAddress = place.formatted_address;
       confirmBtn.disabled = false;
     }
   });
 }
 
-// ── run the address check (calls the serverless API) ────────────────────
-async function runCheck(address) {
-  // Show loading state
-  confirmBtn.disabled = true;
-  confirmBtn.textContent = 'Checking...';
-  document.getElementById('resultSection').style.display = 'none';
+// Wait for Google to load
+window.onload = () => {
+  const checkGoogle = setInterval(() => {
+    if (window.google) {
+      initAutocomplete();
+      clearInterval(checkGoogle);
+    }
+  }, 100);
+};
 
+confirmBtn.onclick = async () => {
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = 'Searching...';
+  
   try {
     const response = await fetch('/api/check-address', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ address }),
+      body: JSON.stringify({ address: selectedAddress })
     });
-
-    if (!response.ok) {
-      throw new Error('API returned ' + response.status);
-    }
-
+    
     const result = await response.json();
-
-    // Show results
     document.getElementById('resultSection').style.display = 'block';
-
+    
     if (result.matched) {
-      document.getElementById('matchedPanel').style.display   = 'block';
+      document.getElementById('matchedPanel').style.display = 'block';
       document.getElementById('notMatchedPanel').style.display = 'none';
-      document.getElementById('matchedAddress').textContent    = 'Matched: ' + address;
+      document.getElementById('villageInfo').textContent = `Your address is in the Village of ${result.village}.`;
     } else {
-      document.getElementById('matchedPanel').style.display   = 'none';
+      document.getElementById('matchedPanel').style.display = 'none';
       document.getElementById('notMatchedPanel').style.display = 'block';
-      document.getElementById('notMatchedAddress').textContent = 'Checked: ' + address;
     }
-
-  } catch (err) {
-    console.error('Check failed:', err);
-    document.getElementById('resultSection').style.display = 'block';
-    document.getElementById('matchedPanel').style.display   = 'none';
-    document.getElementById('notMatchedPanel').style.display = 'block';
-    document.getElementById('notMatchedAddress').textContent = 'Error — please try again.';
+  } catch (e) {
+    alert("Error checking address.");
+  } finally {
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = 'Confirm';
   }
-
-  // Reset button
-  confirmBtn.textContent = 'Confirm';
-  confirmBtn.disabled = false;
-}
+};
 </script>
-
 </body>
 </html>
