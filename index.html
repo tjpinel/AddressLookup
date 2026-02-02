@@ -162,7 +162,65 @@
       color: var(--red-text);
     }
 
-    /* section label above cards */
+    /* ── CATEGORY SELECTOR ─────────────────────────────────── */
+    .category-selector {
+      margin-bottom: 24px;
+    }
+
+    .category-selector .selector-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-light);
+      margin-bottom: 10px;
+    }
+
+    .category-checkboxes {
+      display: flex;
+      gap: 12px;
+    }
+
+    .category-checkboxes label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      background: #fff;
+      border: 2px solid #ddd;
+      border-radius: 24px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: 0.3px;
+      color: var(--text-mid);
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+    }
+
+    .category-checkboxes label:hover {
+      border-color: var(--green-mid);
+      background: var(--green-light);
+    }
+
+    .category-checkboxes input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: var(--green-dark);
+    }
+
+    .category-checkboxes input[type="checkbox"]:checked + span {
+      color: var(--green-dark);
+    }
+
+    .category-checkboxes label:has(input:checked) {
+      border-color: var(--green-dark);
+      background: var(--green-light);
+    }
+
+    /* ── MEMBERSHIP CARDS ──────────────────────────────────── */
     .cards-label {
       font-size: 0.78rem;
       font-weight: 600;
@@ -172,7 +230,6 @@
       margin-bottom: 12px;
     }
 
-    /* ── MEMBERSHIP CARDS ──────────────────────────────────── */
     .membership-cards {
       display: flex;
       flex-direction: column;
@@ -289,6 +346,13 @@
       border-radius: 20px;
     }
 
+    .no-results-msg {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-light);
+      font-size: 0.9rem;
+    }
+
     /* ── CTA ───────────────────────────────────────────────── */
     .cta-row {
       margin-top: 28px;
@@ -320,6 +384,7 @@
     @media (max-width: 520px) {
       .lookup-card { padding: 32px 22px 28px; }
       .lookup-card h1 { font-size: 1.6rem; }
+      .category-checkboxes { flex-direction: column; }
     }
   </style>
 </head>
@@ -343,13 +408,17 @@
 
 <script>
 // ── MEMBERSHIP DATA ─────────────────────────────────────────────────────
-// New member individual rates, valid through April 30, 2026
+// Each membership has:
+//   - categories: array of 'play', 'fit', 'golf' (what it includes)
+//   - residentPrice / nonResidentPrice (new member individual monthly rates)
+//   - features list
 // Source: columbiaassociation.org/sports-recreation/membership/pricing/
 const MEMBERSHIPS = [
   {
     id: 'play',
     title: 'Play',
     badge: null,
+    categories: ['play'],
     residentPrice: 32,
     nonResidentPrice: 67,
     features: [
@@ -360,9 +429,22 @@ const MEMBERSHIPS = [
     ],
   },
   {
+    id: '1fit',
+    title: '1Fit',
+    badge: null,
+    categories: ['fit'],
+    residentPrice: 70,
+    nonResidentPrice: 95,
+    features: [
+      'Access to one fitness club of your choice',
+      'Athletic Club, Columbia Gym, or Supreme Sports Club',
+    ],
+  },
+  {
     id: 'fitplay',
     title: 'Fit & Play',
     badge: 'Most Popular',
+    categories: ['fit', 'play'],
     residentPrice: 100,
     nonResidentPrice: 121,
     features: [
@@ -376,6 +458,7 @@ const MEMBERSHIPS = [
     id: 'golffitplay',
     title: 'Golf Fit & Play',
     badge: 'Elite',
+    categories: ['golf', 'fit', 'play'],
     residentPrice: 387,
     nonResidentPrice: 509,
     features: [
@@ -384,21 +467,46 @@ const MEMBERSHIPS = [
       'KidSpace included',
     ],
   },
+  {
+    id: '5daygolfplay',
+    title: '5-Day Golf & Play',
+    badge: null,
+    categories: ['golf', 'play'],
+    residentPrice: 264,
+    nonResidentPrice: 329,
+    features: [
+      'Weekday golf access',
+      'All Play benefits',
+    ],
+  },
+  {
+    id: '7daygolf',
+    title: '7-Day Golf',
+    badge: null,
+    categories: ['golf'],
+    residentPrice: 370,
+    nonResidentPrice: 456,
+    features: [
+      'Unlimited 7-day golf at Hobbit\'s Glen & Fairway Hills',
+    ],
+  },
 ];
 
 // ── STATE ───────────────────────────────────────────────────────────────
 let selectedAddress = null;
+let isResident = false;
+let selectedCategories = new Set(); // 'fit', 'play', 'golf'
 
 // ── INIT ────────────────────────────────────────────────────────────────
 const input      = document.getElementById('addressInput');
 const confirmBtn = document.getElementById('confirmBtn');
 
-input.addEventListener('input', () => {
+input.addEventListener('input', function() {
   selectedAddress = null;
   confirmBtn.disabled = true;
 });
 
-confirmBtn.addEventListener('click', () => {
+confirmBtn.addEventListener('click', function() {
   if (!selectedAddress) return;
   runCheck(selectedAddress);
 });
@@ -414,14 +522,14 @@ function waitForGoogle() {
 waitForGoogle();
 
 function initAutocomplete() {
-  const autocomplete = new google.maps.places.Autocomplete(input, {
+  var autocomplete = new google.maps.places.Autocomplete(input, {
     componentRestrictions: { country: 'US' },
     fields: ['formatted_address'],
     types: ['address'],
   });
 
-  autocomplete.addListener('place_changed', () => {
-    const place = autocomplete.getPlace();
+  autocomplete.addListener('place_changed', function() {
+    var place = autocomplete.getPlace();
     if (place && place.formatted_address) {
       selectedAddress = place.formatted_address;
       confirmBtn.disabled = false;
@@ -435,16 +543,17 @@ async function runCheck(address) {
   confirmBtn.textContent = 'Checking...';
 
   try {
-    const response = await fetch('/api/check-address', {
+    var response = await fetch('/api/check-address', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ address }),
+      body: JSON.stringify({ address: address }),
     });
 
     if (!response.ok) throw new Error('API returned ' + response.status);
 
-    const result = await response.json();
-    renderResults(result.matched, address);
+    var result = await response.json();
+    isResident = result.matched;
+    renderResults(isResident, address);
 
   } catch (err) {
     console.error('Check failed:', err);
@@ -457,36 +566,92 @@ async function runCheck(address) {
 
 // ── RENDER ──────────────────────────────────────────────────────────────
 function renderResults(matched, address) {
-  const section = document.getElementById('resultSection');
+  var section = document.getElementById('resultSection');
 
   // status banner
-  let bannerHTML;
+  var bannerHTML;
   if (matched) {
-    bannerHTML = `
-      <div class="status-banner matched">
-        <div class="banner-icon">&#10003;</div>
-        <div class="banner-title">You qualify for CA Resident rates!</div>
-        <div class="banner-sub">Your address is on CA-assessed property. You're eligible for significantly discounted membership pricing — see your options below.</div>
-      </div>`;
+    bannerHTML =
+      '<div class="status-banner matched">' +
+        '<div class="banner-icon">&#10003;</div>' +
+        '<div class="banner-title">You qualify for CA Resident rates!</div>' +
+        '<div class="banner-sub">Your address is on CA-assessed property. You\'re eligible for significantly discounted membership pricing — see your options below.</div>' +
+      '</div>';
   } else {
-    bannerHTML = `
-      <div class="status-banner not-matched">
-        <div class="banner-icon">&#128075;</div>
-        <div class="banner-title">Welcome — here are your membership options.</div>
-        <div class="banner-sub">Your address is not on CA-assessed property. Standard membership rates apply. See what's available below.</div>
-      </div>`;
+    bannerHTML =
+      '<div class="status-banner not-matched">' +
+        '<div class="banner-icon">&#128075;</div>' +
+        '<div class="banner-title">Welcome — here are your membership options.</div>' +
+        '<div class="banner-sub">Your address is not on CA-assessed property. Standard membership rates apply. See what\'s available below.</div>' +
+      '</div>';
   }
 
-  // membership cards
-  let cardsHTML = '<div class="cards-label">Choose a membership</div><div class="membership-cards">';
+  // category selector
+  var selectorHTML =
+    '<div class="category-selector">' +
+      '<div class="selector-label">Choose a membership</div>' +
+      '<div class="category-checkboxes">' +
+        '<label><input type="checkbox" id="catFit" onchange="updateCards()"><span>Fit</span></label>' +
+        '<label><input type="checkbox" id="catPlay" onchange="updateCards()"><span>Play</span></label>' +
+        '<label><input type="checkbox" id="catGolf" onchange="updateCards()"><span>Golf</span></label>' +
+      '</div>' +
+    '</div>';
 
-  MEMBERSHIPS.forEach(function(mem) {
+  // cards container (empty for now)
+  var cardsHTML = '<div id="cardsContainer"></div>';
+
+  // CTA
+  var ctaHTML =
+    '<div class="cta-row">' +
+      '<a href="https://columbiaassociation.org/sports-recreation/membership/" target="_blank">Get Started with CA</a>' +
+      '<span class="cta-sub">Pricing valid through April 30, 2026 &middot; Individual rates shown</span>' +
+    '</div>';
+
+  section.innerHTML = bannerHTML + selectorHTML + cardsHTML + ctaHTML;
+  section.style.display = 'block';
+
+  // initial state: no cards visible
+  updateCards();
+}
+
+function updateCards() {
+  // read checkboxes
+  selectedCategories.clear();
+  if (document.getElementById('catFit').checked)  selectedCategories.add('fit');
+  if (document.getElementById('catPlay').checked) selectedCategories.add('play');
+  if (document.getElementById('catGolf').checked) selectedCategories.add('golf');
+
+  var container = document.getElementById('cardsContainer');
+  if (!container) return;
+
+  // if nothing checked, show "pick at least one" message
+  if (selectedCategories.size === 0) {
+    container.innerHTML = '<div class="no-results-msg">Select at least one category above to see membership options.</div>';
+    return;
+  }
+
+  // filter: show memberships that include ANY of the selected categories (loose)
+  var filtered = MEMBERSHIPS.filter(function(mem) {
+    return mem.categories.some(function(cat) {
+      return selectedCategories.has(cat);
+    });
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="no-results-msg">No memberships match your selection.</div>';
+    return;
+  }
+
+  // render cards
+  var cardsHTML = '<div class="membership-cards">';
+
+  filtered.forEach(function(mem) {
     var isFeatured = (mem.badge === 'Most Popular') ? ' featured' : '';
     var badgeHTML  = mem.badge ? '<div class="card-badge">' + mem.badge + '</div>' : '';
     var savingsHTML = '';
     var priceBlockHTML;
 
-    if (matched) {
+    if (isResident) {
       var savings = Math.round(((mem.nonResidentPrice - mem.residentPrice) / mem.nonResidentPrice) * 100);
       priceBlockHTML =
         '<div class="price-block">' +
@@ -519,16 +684,7 @@ function renderResults(matched, address) {
   });
 
   cardsHTML += '</div>';
-
-  // CTA
-  var ctaHTML =
-    '<div class="cta-row">' +
-      '<a href="https://columbiaassociation.org/sports-recreation/membership/" target="_blank">Get Started with CA</a>' +
-      '<span class="cta-sub">Pricing valid through April 30, 2026 &middot; Individual rates shown</span>' +
-    '</div>';
-
-  section.innerHTML = bannerHTML + cardsHTML + ctaHTML;
-  section.style.display = 'block';
+  container.innerHTML = cardsHTML;
 }
 
 function renderError() {
