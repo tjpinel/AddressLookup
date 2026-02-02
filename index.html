@@ -3,13 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CA Membership Lookup</title>
+  <title>CA Membership Finder</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 
-  <script async
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBreE7Ccp95zJ0hF3pmrn1U5l7RSictGl8&libraries=places">
-  </script>
+  <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBreE7Ccp95zJ0hF3pmrn1U5l7RSictGl8&libraries=places"></script>
 
   <style>
     :root {
@@ -18,686 +16,332 @@
       --green-light:  #eef5f2;
       --green-border: #c5ddd3;
       --gold:         #c8a95e;
-      --gold-light:   #f5f0e0;
       --warm-bg:      #f5f0e8;
       --text-dark:    #1e2e26;
       --text-mid:     #4a5a52;
-      --text-light:   #7a8a82;
-      --red-bg:       #fdf3f0;
-      --red-border:   #e8c4b8;
-      --red-text:     #6b3a2a;
+      --white:        #ffffff;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'DM Sans', system-ui, sans-serif;
-      background: var(--warm-bg);
-      min-height: 100vh;
+      font-family: 'DM Sans', sans-serif;
+      background-color: var(--warm-bg);
       color: var(--text-dark);
-      padding: 60px 20px 80px;
+      line-height: 1.5;
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
     }
 
-    .page-wrapper {
-      max-width: 680px;
-      margin: 0 auto;
-    }
+    .page-wrapper { width: 100%; max-width: 500px; }
 
-    /* ── LOOKUP CARD ───────────────────────────────────────── */
-    .lookup-card {
-      background: #fff;
+    header { text-align: center; margin-bottom: 32px; }
+    h1 { font-family: 'Playfair Display', serif; font-size: 2.2rem; color: var(--green-dark); margin-bottom: 8px; }
+    .subtitle { color: var(--text-mid); font-size: 1rem; }
+
+    /* Step Containers */
+    .step-card {
+      background: var(--white);
       border-radius: 16px;
-      box-shadow: 0 4px 32px rgba(0,0,0,0.07);
-      padding: 44px 40px 40px;
-    }
-
-    .lookup-card h1 {
-      font-family: 'Playfair Display', serif;
-      font-size: 2rem;
-      color: var(--green-dark);
-      font-weight: 700;
-      margin-bottom: 6px;
-      line-height: 1.2;
-    }
-
-    .lookup-card .subtitle {
-      color: var(--text-light);
-      font-size: 0.92rem;
-      margin-bottom: 28px;
-    }
-
-    label {
-      display: block;
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--text-mid);
-      margin-bottom: 7px;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-    }
-
-    #addressInput {
-      width: 100%;
-      padding: 14px 16px;
-      border: 2px solid #ddd;
-      border-radius: 10px;
-      font-size: 1rem;
-      font-family: inherit;
-      transition: border-color 0.2s;
-      outline: none;
-      background: #fafafa;
-    }
-
-    #addressInput:focus {
-      border-color: var(--green-mid);
-      background: #fff;
-    }
-
-    .pac-item       { padding: 10px 16px; font-size: 0.9rem; }
-    .pac-item:hover { background: var(--green-light); }
-    .pac-item-selected { background: var(--green-light); }
-
-    #confirmBtn {
-      margin-top: 18px;
-      width: 100%;
-      padding: 13px 24px;
-      background: var(--green-dark);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s, opacity 0.2s;
-      font-family: inherit;
-      letter-spacing: 0.3px;
-    }
-
-    #confirmBtn:hover:not(:disabled) { background: #1e3528; }
-    #confirmBtn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-    /* ── RESULT SECTION ────────────────────────────────────── */
-    #resultSection {
-      display: none;
-      margin-top: 32px;
-    }
-
-    /* status banner */
-    .status-banner {
-      border-radius: 12px;
-      padding: 22px 24px;
-      margin-bottom: 28px;
-    }
-
-    .status-banner .banner-icon {
-      font-size: 1.4rem;
-      margin-bottom: 6px;
-    }
-
-    .status-banner .banner-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.2rem;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    .status-banner .banner-sub {
-      font-size: 0.88rem;
-      opacity: 0.8;
-    }
-
-    .status-banner.matched {
-      background: var(--green-light);
-      border: 1px solid var(--green-border);
-      color: var(--green-dark);
-    }
-
-    .status-banner.not-matched {
-      background: var(--red-bg);
-      border: 1px solid var(--red-border);
-      color: var(--red-text);
-    }
-
-    /* ── CATEGORY SELECTOR ─────────────────────────────────── */
-    .category-selector {
+      padding: 32px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
       margin-bottom: 24px;
     }
 
-    .category-selector .selector-label {
-      font-size: 0.78rem;
-      font-weight: 600;
+    .step-label {
       text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: var(--text-light);
-      margin-bottom: 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--gold);
+      margin-bottom: 12px;
+      display: block;
     }
 
-    .category-checkboxes {
-      display: flex;
-      gap: 12px;
+    /* Address Input */
+    #addressInput {
+      width: 100%;
+      padding: 16px;
+      border: 2px solid #eee;
+      border-radius: 12px;
+      font-size: 1rem;
+      margin-bottom: 16px;
+      outline: none;
+      transition: border-color 0.2s;
     }
+    #addressInput:focus { border-color: var(--green-dark); }
 
-    .category-checkboxes label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 18px;
-      background: #fff;
-      border: 2px solid #ddd;
-      border-radius: 24px;
-      font-size: 0.88rem;
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      background: var(--green-dark);
+      color: white;
+      border: none;
+      border-radius: 12px;
       font-weight: 600;
-      text-transform: none;
-      letter-spacing: 0.3px;
-      color: var(--text-mid);
+      font-size: 1rem;
       cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Verification Banner */
+    #statusBanner { display: none; margin-top: 20px; padding: 16px; border-radius: 12px; font-weight: 500; }
+    .status-resident { background: var(--green-light); color: var(--green-dark); border: 1px solid var(--green-border); }
+    .status-nonresident { background: #fff; border: 1px solid #ddd; color: var(--text-mid); }
+
+    /* Segmented Controls (Selectors) */
+    .selector-group { display: flex; gap: 8px; margin-bottom: 20px; }
+    .selector-item {
+      flex: 1;
+      text-align: center;
+      padding: 12px 8px;
+      border: 2px solid #eee;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: white;
       transition: all 0.2s;
-      user-select: none;
     }
-
-    .category-checkboxes label:hover {
-      border-color: var(--green-mid);
-      background: var(--green-light);
-    }
-
-    .category-checkboxes input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      cursor: pointer;
-      accent-color: var(--green-dark);
-    }
-
-    .category-checkboxes input[type="checkbox"]:checked + span {
-      color: var(--green-dark);
-    }
-
-    .category-checkboxes label:has(input:checked) {
+    .selector-item.active {
       border-color: var(--green-dark);
       background: var(--green-light);
+      color: var(--green-dark);
     }
 
-    /* ── MEMBERSHIP CARDS ──────────────────────────────────── */
-    .cards-label {
-      font-size: 0.78rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: var(--text-light);
-      margin-bottom: 12px;
-    }
-
-    .membership-cards {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
+    /* Membership Cards */
     .mem-card {
-      background: #fff;
-      border: 1.5px solid #e4e4e4;
-      border-radius: 14px;
-      padding: 22px 24px;
-      transition: box-shadow 0.2s;
+      background: white;
+      border-radius: 16px;
+      border: 1px solid #eee;
+      padding: 24px;
+      margin-bottom: 16px;
+      position: relative;
+      transition: transform 0.2s;
     }
-
-    .mem-card:hover {
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    .mem-card.featured { border: 2px solid var(--gold); }
+    .card-badge {
+      position: absolute; top: -12px; right: 20px;
+      background: var(--gold); color: white;
+      padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 700;
     }
-
-    .mem-card.featured {
-      border-color: var(--gold);
-      background: linear-gradient(135deg, #fff 0%, var(--gold-light) 100%);
-    }
-
-    .mem-card .card-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-
-    .mem-card .card-title-wrap .card-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.15rem;
-      font-weight: 700;
-      color: var(--green-dark);
-    }
-
-    .mem-card .card-title-wrap .card-badge {
-      display: inline-block;
-      margin-top: 3px;
-      font-size: 0.68rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      background: var(--gold);
-      color: #fff;
-      padding: 2px 8px;
-      border-radius: 20px;
-    }
-
-    .mem-card .price-block {
-      text-align: right;
-      flex-shrink: 0;
-    }
-
-    .mem-card .price-resident {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--green-dark);
-      line-height: 1;
-    }
-
-    .mem-card .price-resident span {
-      font-size: 0.78rem;
-      font-weight: 500;
-      color: var(--text-light);
-    }
-
-    .mem-card .price-nonresident {
-      font-size: 0.82rem;
-      color: var(--text-light);
-      text-decoration: line-through;
-      margin-top: 3px;
-    }
-
-    .mem-card .price-block.nonresident-mode .price-resident {
-      color: var(--text-mid);
-      font-size: 1.3rem;
-    }
-
-    .mem-card .price-block.nonresident-mode .price-nonresident {
-      display: none;
-    }
-
-    .mem-card .card-features {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px 16px;
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid #eee;
-    }
-
-    .mem-card .card-features li {
-      list-style: none;
-      font-size: 0.82rem;
-      color: var(--text-mid);
-    }
-
-    .mem-card .card-features li::before {
-      content: '✓ ';
-      color: var(--green-mid);
-      font-weight: 700;
-    }
+    .card-title { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--green-dark); }
+    
+    .price-wrap { margin: 16px 0; }
+    .current-price { font-size: 2rem; font-weight: 700; color: var(--green-dark); }
+    .current-price span { font-size: 1rem; color: var(--text-light); }
+    .old-price { text-decoration: line-through; color: #a0a0a0; font-size: 1rem; margin-left: 8px; }
 
     .savings-pill {
       display: inline-block;
-      margin-top: 10px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      background: var(--green-light);
-      color: var(--green-dark);
-      padding: 3px 10px;
-      border-radius: 20px;
+      background: #e6f4ea; color: #1e7e34;
+      padding: 4px 10px; border-radius: 6px;
+      font-size: 0.8rem; font-weight: 600; margin-top: 8px;
     }
 
-    .no-results-msg {
-      text-align: center;
-      padding: 40px 20px;
-      color: var(--text-light);
-      font-size: 0.9rem;
-    }
+    .features-list { list-style: none; margin-top: 16px; }
+    .features-list li { font-size: 0.85rem; color: var(--text-mid); margin-bottom: 6px; padding-left: 20px; position: relative; }
+    .features-list li::before { content: '✓'; position: absolute; left: 0; color: var(--green-dark); font-weight: bold; }
 
-    /* ── CTA ───────────────────────────────────────────────── */
-    .cta-row {
-      margin-top: 28px;
-      text-align: center;
-    }
-
-    .cta-row a {
-      display: inline-block;
-      background: var(--green-dark);
-      color: #fff;
-      text-decoration: none;
-      padding: 13px 32px;
-      border-radius: 10px;
-      font-weight: 600;
-      font-size: 0.92rem;
-      letter-spacing: 0.3px;
-      transition: background 0.2s;
-    }
-
-    .cta-row a:hover { background: #1e3528; }
-
-    .cta-row .cta-sub {
-      display: block;
-      margin-top: 10px;
-      font-size: 0.8rem;
-      color: var(--text-light);
-    }
-
-    @media (max-width: 520px) {
-      .lookup-card { padding: 32px 22px 28px; }
-      .lookup-card h1 { font-size: 1.6rem; }
-      .category-checkboxes { flex-direction: column; }
-    }
+    #selectionSection { display: none; }
   </style>
 </head>
 <body>
 
 <div class="page-wrapper">
+  <header>
+    <h1>Find Your Membership</h1>
+    <p class="subtitle">Enter your address to unlock your rates.</p>
+  </header>
 
-  <div class="lookup-card">
-    <h1>What is your address?</h1>
-    <p class="subtitle">Enter your address below and we'll check your membership options.</p>
-
-    <label for="addressInput">Address</label>
-    <input type="text" id="addressInput" placeholder="e.g. 123 Main St, Columbia, MD" autocomplete="off" />
-
-    <button id="confirmBtn" disabled>Check My Address</button>
+  <div class="step-card">
+    <span class="step-label">Step 1: Verify Residency</span>
+    <input type="text" id="addressInput" placeholder="Enter your home address..." autocomplete="off">
+    <button id="confirmBtn" class="btn-primary" disabled>Confirm Address</button>
+    
+    <div id="statusBanner"></div>
   </div>
 
-  <div id="resultSection"></div>
+  <div id="selectionSection">
+    <div class="step-card">
+      <span class="step-label">Step 2: Who is joining?</span>
+      <div class="selector-group" id="sizeSelector">
+        <div class="selector-item active" data-size="individual">Individual</div>
+        <div class="selector-item" data-size="twoMember">Two Member</div>
+        <div class="selector-item" data-size="family">Family</div>
+      </div>
 
+      <span class="step-label">Step 3: What is your vibe?</span>
+      <div class="selector-group" id="typeSelector">
+        <div class="selector-item active" data-type="play">Play</div>
+        <div class="selector-item" data-type="fit">Fitness</div>
+        <div class="selector-item" data-type="golf">Golf</div>
+      </div>
+    </div>
+
+    <div id="membershipResults"></div>
+  </div>
 </div>
 
 <script>
-// ── MEMBERSHIP DATA ─────────────────────────────────────────────────────
-// Each membership has:
-//   - categories: array of 'play', 'fit', 'golf' (what it includes)
-//   - residentPrice / nonResidentPrice (new member individual monthly rates)
-//   - features list
-// Source: columbiaassociation.org/sports-recreation/membership/pricing/
+/**
+ * DATA STRUCTURE
+ * Updated with 2026 pricing for Resident vs Non-Resident
+ */
 const MEMBERSHIPS = [
   {
     id: 'play',
-    title: 'Play',
-    badge: null,
-    categories: ['play'],
-    residentPrice: 32,
-    nonResidentPrice: 67,
-    features: [
-      '23 outdoor pools + indoor Swim Center',
-      'Ice Rink access',
-      'Tennis & Pickleball courts',
-      'SportsPark (mini-golf & skate park)',
-    ],
-  },
-  {
-    id: '1fit',
-    title: '1Fit',
-    badge: null,
-    categories: ['fit'],
-    residentPrice: 70,
-    nonResidentPrice: 95,
-    features: [
-      'Access to one fitness club of your choice',
-      'Athletic Club, Columbia Gym, or Supreme Sports Club',
-    ],
+    category: 'play',
+    title: 'Play Membership',
+    features: ['23 Outdoor Pools', 'Swim Center & SplashDown', 'Ice Rink', 'Tennis & Pickleball', 'SportsPark Mini-Golf'],
+    prices: {
+      resident: { individual: 27, twoMember: 33, family: 39 },
+      nonResident: { individual: 61, twoMember: 76, family: 78 }
+    }
   },
   {
     id: 'fitplay',
+    category: 'fit',
     title: 'Fit & Play',
-    badge: 'Most Popular',
-    categories: ['fit', 'play'],
-    residentPrice: 100,
-    nonResidentPrice: 121,
-    features: [
-      'All 3 fitness clubs included',
-      'Everything in Play',
-      'Green fee discounts at golf courses',
-      'KidSpace add-on available (+$15/mo)',
-    ],
+    featured: true,
+    badge: 'Best Value',
+    features: ['Access to all 3 Fitness Clubs', 'All Play Membership benefits', 'Group Fitness Classes', 'KidSpace Included'],
+    prices: {
+      resident: { individual: 87, twoMember: 115, family: 122 },
+      nonResident: { individual: 111, twoMember: 174, family: 198 }
+    }
   },
   {
-    id: 'golffitplay',
+    id: '1fit',
+    category: 'fit',
+    title: '1Fit',
+    features: ['Access to 1 Fitness Club of choice', 'Group Fitness Classes', 'Sauna & Hot Tub', 'Indoor Basketball'],
+    prices: {
+      resident: { individual: 68, twoMember: 86, family: 91 },
+      nonResident: { individual: 89, twoMember: 131, family: 153 }
+    }
+  },
+  {
+    id: 'golf',
+    category: 'golf',
     title: 'Golf Fit & Play',
     badge: 'Elite',
-    categories: ['golf', 'fit', 'play'],
-    residentPrice: 387,
-    nonResidentPrice: 509,
-    features: [
-      'All Fit & Play benefits',
-      'Unlimited green fees at Hobbit\'s Glen & Fairway Hills',
-      'KidSpace included',
-    ],
-  },
-  {
-    id: '5daygolfplay',
-    title: '5-Day Golf & Play',
-    badge: null,
-    categories: ['golf', 'play'],
-    residentPrice: 264,
-    nonResidentPrice: 329,
-    features: [
-      'Weekday golf access',
-      'All Play benefits',
-    ],
-  },
-  {
-    id: '7daygolf',
-    title: '7-Day Golf',
-    badge: null,
-    categories: ['golf'],
-    residentPrice: 370,
-    nonResidentPrice: 456,
-    features: [
-      'Unlimited 7-day golf at Hobbit\'s Glen & Fairway Hills',
-    ],
-  },
+    features: ['Unlimited Green Fees (2 Courses)', 'All Fit & Play benefits', '8-day Advance Tee Times', 'Handicap Fees Included'],
+    prices: {
+      resident: { individual: 353, twoMember: 430, family: 430 },
+      nonResident: { individual: 460, twoMember: 567, family: 567 }
+    }
+  }
 ];
 
-// ── STATE ───────────────────────────────────────────────────────────────
-let selectedAddress = null;
-let isResident = false;
-let selectedCategories = new Set(); // 'fit', 'play', 'golf'
+let state = {
+  isResident: false,
+  village: '',
+  selectedSize: 'individual',
+  selectedType: 'play'
+};
 
-// ── INIT ────────────────────────────────────────────────────────────────
-const input      = document.getElementById('addressInput');
-const confirmBtn = document.getElementById('confirmBtn');
+// UI Elements
+const input = document.getElementById('addressInput');
+const btn = document.getElementById('confirmBtn');
+const banner = document.getElementById('statusBanner');
+const resultsArea = document.getElementById('membershipResults');
 
-input.addEventListener('input', function() {
-  selectedAddress = null;
-  confirmBtn.disabled = true;
-});
-
-confirmBtn.addEventListener('click', function() {
-  if (!selectedAddress) return;
-  runCheck(selectedAddress);
-});
-
-// ── GOOGLE PLACES ───────────────────────────────────────────────────────
+// Initialize Google
 function waitForGoogle() {
-  if (window.google && window.google.maps && window.google.maps.places) {
-    initAutocomplete();
-  } else {
-    setTimeout(waitForGoogle, 300);
-  }
+  if (window.google && window.google.maps) {
+    const auto = new google.maps.places.Autocomplete(input, {
+      componentRestrictions: { country: 'US' },
+      fields: ['formatted_address'],
+      types: ['address']
+    });
+    auto.addListener('place_changed', () => {
+      btn.disabled = !input.value;
+    });
+  } else { setTimeout(waitForGoogle, 200); }
 }
 waitForGoogle();
 
-function initAutocomplete() {
-  var autocomplete = new google.maps.places.Autocomplete(input, {
-    componentRestrictions: { country: 'US' },
-    fields: ['formatted_address'],
-    types: ['address'],
+// Handle Selection Buttons
+document.querySelectorAll('.selector-item').forEach(item => {
+  item.addEventListener('click', (e) => {
+    const parent = e.target.parentElement;
+    parent.querySelectorAll('.selector-item').forEach(i => i.classList.remove('active'));
+    e.target.classList.add('active');
+
+    if (parent.id === 'sizeSelector') state.selectedSize = e.target.dataset.size;
+    if (parent.id === 'typeSelector') state.selectedType = e.target.dataset.type;
+    
+    renderCards();
   });
+});
 
-  autocomplete.addListener('place_changed', function() {
-    var place = autocomplete.getPlace();
-    if (place && place.formatted_address) {
-      selectedAddress = place.formatted_address;
-      confirmBtn.disabled = false;
-    }
-  });
-}
-
-// ── ADDRESS CHECK ───────────────────────────────────────────────────────
-async function runCheck(address) {
-  confirmBtn.disabled = true;
-  confirmBtn.textContent = 'Checking...';
-
+// Confirm Address
+btn.onclick = async () => {
+  btn.disabled = true;
+  btn.innerText = "Checking...";
+  
   try {
-    var response = await fetch('/api/check-address', {
+    const res = await fetch('/api/check-address', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ address: address }),
+      body: JSON.stringify({ address: input.value })
     });
+    const data = await res.json();
+    
+    state.isResident = data.matched;
+    state.village = data.village;
 
-    if (!response.ok) throw new Error('API returned ' + response.status);
-
-    var result = await response.json();
-    isResident = result.matched;
-    renderResults(isResident, address);
-
-  } catch (err) {
-    console.error('Check failed:', err);
-    renderError();
-  }
-
-  confirmBtn.textContent = 'Check My Address';
-  confirmBtn.disabled = false;
-}
-
-// ── RENDER ──────────────────────────────────────────────────────────────
-function renderResults(matched, address) {
-  var section = document.getElementById('resultSection');
-
-  // status banner
-  var bannerHTML;
-  if (matched) {
-    bannerHTML =
-      '<div class="status-banner matched">' +
-        '<div class="banner-icon">&#10003;</div>' +
-        '<div class="banner-title">You qualify for CA Resident rates!</div>' +
-        '<div class="banner-sub">Your address is on CA-assessed property. You\'re eligible for significantly discounted membership pricing — see your options below.</div>' +
-      '</div>';
-  } else {
-    bannerHTML =
-      '<div class="status-banner not-matched">' +
-        '<div class="banner-icon">&#128075;</div>' +
-        '<div class="banner-title">Welcome — here are your membership options.</div>' +
-        '<div class="banner-sub">Your address is not on CA-assessed property. Standard membership rates apply. See what\'s available below.</div>' +
-      '</div>';
-  }
-
-  // category selector
-  var selectorHTML =
-    '<div class="category-selector">' +
-      '<div class="selector-label">Choose a membership</div>' +
-      '<div class="category-checkboxes">' +
-        '<label><input type="checkbox" id="catFit" onchange="updateCards()"><span>Fit</span></label>' +
-        '<label><input type="checkbox" id="catPlay" onchange="updateCards()"><span>Play</span></label>' +
-        '<label><input type="checkbox" id="catGolf" onchange="updateCards()"><span>Golf</span></label>' +
-      '</div>' +
-    '</div>';
-
-  // cards container (empty for now)
-  var cardsHTML = '<div id="cardsContainer"></div>';
-
-  // CTA
-  var ctaHTML =
-    '<div class="cta-row">' +
-      '<a href="https://columbiaassociation.org/sports-recreation/membership/" target="_blank">Get Started with CA</a>' +
-      '<span class="cta-sub">Pricing valid through April 30, 2026 &middot; Individual rates shown</span>' +
-    '</div>';
-
-  section.innerHTML = bannerHTML + selectorHTML + cardsHTML + ctaHTML;
-  section.style.display = 'block';
-
-  // initial state: no cards visible
-  updateCards();
-}
-
-function updateCards() {
-  // read checkboxes
-  selectedCategories.clear();
-  if (document.getElementById('catFit').checked)  selectedCategories.add('fit');
-  if (document.getElementById('catPlay').checked) selectedCategories.add('play');
-  if (document.getElementById('catGolf').checked) selectedCategories.add('golf');
-
-  var container = document.getElementById('cardsContainer');
-  if (!container) return;
-
-  // if nothing checked, show "pick at least one" message
-  if (selectedCategories.size === 0) {
-    container.innerHTML = '<div class="no-results-msg">Select at least one category above to see membership options.</div>';
-    return;
-  }
-
-  // filter: show memberships that include ANY of the selected categories (loose)
-  var filtered = MEMBERSHIPS.filter(function(mem) {
-    return mem.categories.some(function(cat) {
-      return selectedCategories.has(cat);
-    });
-  });
-
-  if (filtered.length === 0) {
-    container.innerHTML = '<div class="no-results-msg">No memberships match your selection.</div>';
-    return;
-  }
-
-  // render cards
-  var cardsHTML = '<div class="membership-cards">';
-
-  filtered.forEach(function(mem) {
-    var isFeatured = (mem.badge === 'Most Popular') ? ' featured' : '';
-    var badgeHTML  = mem.badge ? '<div class="card-badge">' + mem.badge + '</div>' : '';
-    var savingsHTML = '';
-    var priceBlockHTML;
-
-    if (isResident) {
-      var savings = Math.round(((mem.nonResidentPrice - mem.residentPrice) / mem.nonResidentPrice) * 100);
-      priceBlockHTML =
-        '<div class="price-block">' +
-          '<div class="price-resident">$' + mem.residentPrice + '<span>/mo</span></div>' +
-          '<div class="price-nonresident">$' + mem.nonResidentPrice + '/mo</div>' +
-        '</div>';
-      savingsHTML = '<div class="savings-pill">You save ' + savings + '% vs. standard rate</div>';
+    // Show Banner
+    banner.style.display = 'block';
+    if(state.isResident) {
+      banner.className = 'status-resident';
+      banner.innerHTML = `<strong>✅ Verified!</strong> You qualify for Resident Rates in the Village of ${state.village}.`;
     } else {
-      priceBlockHTML =
-        '<div class="price-block nonresident-mode">' +
-          '<div class="price-resident">$' + mem.nonResidentPrice + '<span>/mo</span></div>' +
-          '<div class="price-nonresident"></div>' +
-        '</div>';
+      banner.className = 'status-nonresident';
+      banner.innerHTML = `<strong>Welcome!</strong> Your address qualifies for our standard membership plans.`;
     }
 
-    var featuresHTML = mem.features.map(function(f) { return '<li>' + f + '</li>'; }).join('');
+    document.getElementById('selectionSection').style.display = 'block';
+    renderCards();
+  } catch (e) {
+    alert("Database connection error.");
+  } finally {
+    btn.disabled = false;
+    btn.innerText = "Confirm Address";
+  }
+};
 
-    cardsHTML +=
-      '<div class="mem-card' + isFeatured + '">' +
-        '<div class="card-header">' +
-          '<div class="card-title-wrap">' +
-            '<div class="card-title">' + mem.title + '</div>' +
-            badgeHTML +
-          '</div>' +
-          priceBlockHTML +
-        '</div>' +
-        '<ul class="card-features">' + featuresHTML + '</ul>' +
-        savingsHTML +
-      '</div>';
-  });
+function renderCards() {
+  const filtered = MEMBERSHIPS.filter(m => m.category === state.selectedType);
+  resultsArea.innerHTML = filtered.map(m => {
+    const resPrice = m.prices.resident[state.selectedSize];
+    const nonPrice = m.prices.nonResident[state.selectedSize];
+    const displayPrice = state.isResident ? resPrice : nonPrice;
+    const savings = Math.round(((nonPrice - resPrice) / nonPrice) * 100);
 
-  cardsHTML += '</div>';
-  container.innerHTML = cardsHTML;
-}
+    return `
+      <div class="mem-card ${m.featured ? 'featured' : ''}">
+        ${m.badge ? `<div class="card-badge">${m.badge}</div>` : ''}
+        <div class="card-title">${m.title}</div>
+        
+        <div class="price-wrap">
+          <span class="current-price">$${displayPrice}<span>/mo</span></span>
+          ${state.isResident ? `<span class="old-price">$${nonPrice}</span>` : ''}
+          ${state.isResident ? `<br><div class="savings-pill">You save ${savings}% as a resident</div>` : ''}
+        </div>
 
-function renderError() {
-  var section = document.getElementById('resultSection');
-  section.innerHTML =
-    '<div class="status-banner not-matched">' +
-      '<div class="banner-icon">&#9888;&#65039;</div>' +
-      '<div class="banner-title">Something went wrong.</div>' +
-      '<div class="banner-sub">Please try again, or contact us at 410-715-3000.</div>' +
-    '</div>';
-  section.style.display = 'block';
+        <ul class="features-list">
+          ${m.features.map(f => `<li>${f}</li>`).join('')}
+        </ul>
+        
+        <button class="btn-primary" style="margin-top:20px">Select Plan</button>
+      </div>
+    `;
+  }).join('');
 }
 </script>
-
 </body>
 </html>
