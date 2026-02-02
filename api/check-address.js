@@ -1,36 +1,33 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { address } = req.body;
-  if (!address) return res.status(400).json({ error: 'No address provided' });
-
-  // 1. Maryland Gatekeeper
+  
+  // 1. Clean the Google Address
+  // Example: "5535 Green Mountain Circle, Columbia, MD 21044, USA"
   const upperAddress = address.toUpperCase();
-  if (!upperAddress.includes('MD') && !upperAddress.includes('MARYLAND')) {
-    return res.status(200).json({ matched: false, reason: 'Outside Maryland' });
-  }
-
-  // 2. Extract House Number and Street Name
-  // Example: "8834 Sandrope Ct, Columbia..." -> ["8834", "SANDROPE"]
-  const parts = address.split(' ');
-  const houseNumber = parts[0]; 
-  const streetName = parts[1] ? parts[1].replace(',', '').toUpperCase() : "";
+  const addressWithoutCity = upperAddress.split(',')[0].trim(); // "5535 GREEN MOUNTAIN CIRCLE"
+  
+  // 2. Extract Parts for a more specific search
+  const parts = addressWithoutCity.split(' ');
+  const houseNumber = parts[0]; // "5535"
+  const streetFirstWord = parts[1]; // "GREEN"
+  const streetSecondWord = parts[2] || ''; // "MOUNTAIN"
 
   try {
-    // 3. The Wildcard Search
-    // Searches for "8834 SANDROPE%" 
-    // This matches "8834 SANDROPE CT" or "8834 SANDROPE COURT"
+    // 3. THE "SPECIFIC" SEARCH
+    // We search for the house number AND the first two words of the street.
+    // This distinguishes "Green Mountain" from "Green Dory".
     const { data, error } = await supabase
       .from('addresses')
       .select('street_address, Village')
-      .ilike('street_address', `${houseNumber} ${streetName}%`)
+      .ilike('street_address', `${houseNumber} %`) // Exact number followed by space
+      .ilike('street_address', `% ${streetFirstWord} %`) // Exact first word
+      .ilike('street_address', `% ${streetSecondWord}%`) // Exact second word
       .limit(1);
 
     if (error) throw error;
@@ -39,12 +36,10 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       matched: matched,
-      village: matched ? data[0].Village : null,
-      debug: `Found house ${houseNumber} on ${streetName}`
+      village: matched ? data[0].Village : null
     });
 
   } catch (err) {
-    console.error('Supabase error:', err.message);
-    return res.status(500).json({ error: 'Database check failed' });
+    return res.status(500).json({ error: err.message });
   }
 }
