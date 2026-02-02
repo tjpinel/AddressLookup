@@ -3,128 +3,544 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Address Lookup</title>
+  <title>CA Membership Lookup</title>
 
-  <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBreE7Ccp95zJ0hF3pmrn1U5l7RSictGl8&libraries=places"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <script async
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBreE7Ccp95zJ0hF3pmrn1U5l7RSictGl8&libraries=places">
+  </script>
 
   <style>
-    /* RESTORING YOUR ORIGINAL STYLES */
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f5f0e8; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 80px 20px; color: #2c2c2c; }
-    .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); padding: 48px 40px; width: 100%; max-width: 540px; }
-    h1 { font-size: 1.8rem; color: #2d4a3e; margin-bottom: 8px; font-weight: 600; }
-    .subtitle { color: #7a7a7a; font-size: 0.95rem; margin-bottom: 32px; }
-    label { display: block; font-size: 0.85rem; font-weight: 600; color: #4a4a4a; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-    #addressInput { width: 100%; padding: 14px 16px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; outline: none; background: #fafafa; margin-bottom: 20px; }
-    #addressInput:focus { border-color: #2d4a3e; background: #fff; }
-    #confirmBtn { padding: 12px 32px; background: #2d4a3e; color: #fff; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; width: 100%; transition: opacity 0.2s; }
-    #confirmBtn:disabled { opacity: 0.4; cursor: not-allowed; }
-    
-    /* Result Panels */
-    #resultSection { display: none; margin-top: 36px; padding-top: 28px; border-top: 2px solid #eee; }
-    .result-panel { padding: 24px; border-radius: 10px; font-size: 1rem; line-height: 1.6; display: none; }
-    #matchedPanel { background: #eef5f2; border: 1px solid #c5ddd3; color: #1e3528; }
-    #notMatchedPanel { background: #fdf3f0; border: 1px solid #e8c4b8; color: #6b3a2a; }
+    :root {
+      --green-dark:   #2d4a3e;
+      --green-mid:    #3d6b57;
+      --green-light:  #eef5f2;
+      --green-border: #c5ddd3;
+      --gold:         #c8a95e;
+      --gold-light:   #f5f0e0;
+      --warm-bg:      #f5f0e8;
+      --text-dark:    #1e2e26;
+      --text-mid:     #4a5a52;
+      --text-light:   #7a8a82;
+      --red-bg:       #fdf3f0;
+      --red-border:   #e8c4b8;
+      --red-text:     #6b3a2a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--warm-bg);
+      min-height: 100vh;
+      color: var(--text-dark);
+      padding: 60px 20px 80px;
+    }
+
+    .page-wrapper {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    /* ── LOOKUP CARD ───────────────────────────────────────── */
+    .lookup-card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.07);
+      padding: 44px 40px 40px;
+    }
+
+    .lookup-card h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      color: var(--green-dark);
+      font-weight: 700;
+      margin-bottom: 6px;
+      line-height: 1.2;
+    }
+
+    .lookup-card .subtitle {
+      color: var(--text-light);
+      font-size: 0.92rem;
+      margin-bottom: 28px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-mid);
+      margin-bottom: 7px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    #addressInput {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-family: inherit;
+      transition: border-color 0.2s;
+      outline: none;
+      background: #fafafa;
+    }
+
+    #addressInput:focus {
+      border-color: var(--green-mid);
+      background: #fff;
+    }
+
+    .pac-item       { padding: 10px 16px; font-size: 0.9rem; }
+    .pac-item:hover { background: var(--green-light); }
+    .pac-item-selected { background: var(--green-light); }
+
+    #confirmBtn {
+      margin-top: 18px;
+      width: 100%;
+      padding: 13px 24px;
+      background: var(--green-dark);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+      font-family: inherit;
+      letter-spacing: 0.3px;
+    }
+
+    #confirmBtn:hover:not(:disabled) { background: #1e3528; }
+    #confirmBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* ── RESULT SECTION ────────────────────────────────────── */
+    #resultSection {
+      display: none;
+      margin-top: 32px;
+    }
+
+    /* status banner */
+    .status-banner {
+      border-radius: 12px;
+      padding: 22px 24px;
+      margin-bottom: 28px;
+    }
+
+    .status-banner .banner-icon {
+      font-size: 1.4rem;
+      margin-bottom: 6px;
+    }
+
+    .status-banner .banner-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .status-banner .banner-sub {
+      font-size: 0.88rem;
+      opacity: 0.8;
+    }
+
+    .status-banner.matched {
+      background: var(--green-light);
+      border: 1px solid var(--green-border);
+      color: var(--green-dark);
+    }
+
+    .status-banner.not-matched {
+      background: var(--red-bg);
+      border: 1px solid var(--red-border);
+      color: var(--red-text);
+    }
+
+    /* section label above cards */
+    .cards-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-light);
+      margin-bottom: 12px;
+    }
+
+    /* ── MEMBERSHIP CARDS ──────────────────────────────────── */
+    .membership-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .mem-card {
+      background: #fff;
+      border: 1.5px solid #e4e4e4;
+      border-radius: 14px;
+      padding: 22px 24px;
+      transition: box-shadow 0.2s;
+    }
+
+    .mem-card:hover {
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    .mem-card.featured {
+      border-color: var(--gold);
+      background: linear-gradient(135deg, #fff 0%, var(--gold-light) 100%);
+    }
+
+    .mem-card .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .mem-card .card-title-wrap .card-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--green-dark);
+    }
+
+    .mem-card .card-title-wrap .card-badge {
+      display: inline-block;
+      margin-top: 3px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      background: var(--gold);
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+
+    .mem-card .price-block {
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .mem-card .price-resident {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--green-dark);
+      line-height: 1;
+    }
+
+    .mem-card .price-resident span {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-light);
+    }
+
+    .mem-card .price-nonresident {
+      font-size: 0.82rem;
+      color: var(--text-light);
+      text-decoration: line-through;
+      margin-top: 3px;
+    }
+
+    .mem-card .price-block.nonresident-mode .price-resident {
+      color: var(--text-mid);
+      font-size: 1.3rem;
+    }
+
+    .mem-card .price-block.nonresident-mode .price-nonresident {
+      display: none;
+    }
+
+    .mem-card .card-features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 16px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #eee;
+    }
+
+    .mem-card .card-features li {
+      list-style: none;
+      font-size: 0.82rem;
+      color: var(--text-mid);
+    }
+
+    .mem-card .card-features li::before {
+      content: '✓ ';
+      color: var(--green-mid);
+      font-weight: 700;
+    }
+
+    .savings-pill {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: var(--green-light);
+      color: var(--green-dark);
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    /* ── CTA ───────────────────────────────────────────────── */
+    .cta-row {
+      margin-top: 28px;
+      text-align: center;
+    }
+
+    .cta-row a {
+      display: inline-block;
+      background: var(--green-dark);
+      color: #fff;
+      text-decoration: none;
+      padding: 13px 32px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.92rem;
+      letter-spacing: 0.3px;
+      transition: background 0.2s;
+    }
+
+    .cta-row a:hover { background: #1e3528; }
+
+    .cta-row .cta-sub {
+      display: block;
+      margin-top: 10px;
+      font-size: 0.8rem;
+      color: var(--text-light);
+    }
+
+    @media (max-width: 520px) {
+      .lookup-card { padding: 32px 22px 28px; }
+      .lookup-card h1 { font-size: 1.6rem; }
+    }
   </style>
 </head>
 <body>
 
-<div class="card">
-  <h1>What is your address?</h1>
-  <p class="subtitle">Start typing and select your address from the suggestions.</p>
+<div class="page-wrapper">
 
-  <label for="addressInput">Address</label>
-  <input type="text" id="addressInput" placeholder="e.g. 123 Main St, Columbia, MD" autocomplete="off" />
+  <div class="lookup-card">
+    <h1>What is your address?</h1>
+    <p class="subtitle">Enter your address below and we'll check your membership options.</p>
 
-  <button id="confirmBtn" disabled>Confirm</button>
+    <label for="addressInput">Address</label>
+    <input type="text" id="addressInput" placeholder="e.g. 123 Main St, Columbia, MD" autocomplete="off" />
 
-  <div id="resultSection">
-    <div class="result-panel" id="matchedPanel">
-      <div style="font-size: 1.6rem;">✅</div>
-      <div style="font-weight: 700; font-size: 1.1rem; margin: 6px 0;">Great news — you're on the list!</div>
-      <div id="villageDisplay"></div>
-    </div>
-
-    <div class="result-panel" id="notMatchedPanel">
-      <div style="font-size: 1.6rem;">❌</div>
-      <div style="font-weight: 700; font-size: 1.1rem; margin: 6px 0;">Sorry, address not found.</div>
-      <div>We couldn't find this address in our Maryland database.</div>
-    </div>
+    <button id="confirmBtn" disabled>Check My Address</button>
   </div>
+
+  <div id="resultSection"></div>
+
 </div>
 
 <script>
-  let selectedAddress = null;
-  const input = document.getElementById('addressInput');
-  const confirmBtn = document.getElementById('confirmBtn');
+// ── MEMBERSHIP DATA ─────────────────────────────────────────────────────
+// New member individual rates, valid through April 30, 2026
+// Source: columbiaassociation.org/sports-recreation/membership/pricing/
+const MEMBERSHIPS = [
+  {
+    id: 'play',
+    title: 'Play',
+    badge: null,
+    residentPrice: 32,
+    nonResidentPrice: 67,
+    features: [
+      '23 outdoor pools + indoor Swim Center',
+      'Ice Rink access',
+      'Tennis & Pickleball courts',
+      'SportsPark (mini-golf & skate park)',
+    ],
+  },
+  {
+    id: 'fitplay',
+    title: 'Fit & Play',
+    badge: 'Most Popular',
+    residentPrice: 100,
+    nonResidentPrice: 121,
+    features: [
+      'All 3 fitness clubs included',
+      'Everything in Play',
+      'Green fee discounts at golf courses',
+      'KidSpace add-on available (+$15/mo)',
+    ],
+  },
+  {
+    id: 'golffitplay',
+    title: 'Golf Fit & Play',
+    badge: 'Elite',
+    residentPrice: 387,
+    nonResidentPrice: 509,
+    features: [
+      'All Fit & Play benefits',
+      'Unlimited green fees at Hobbit\'s Glen & Fairway Hills',
+      'KidSpace included',
+    ],
+  },
+];
 
-  // Initialize Google Autocomplete
-  function initAutocomplete() {
-    if (!window.google) return;
-    const autocomplete = new google.maps.places.Autocomplete(input, {
-      componentRestrictions: { country: 'US' },
-      fields: ['formatted_address'],
-      types: ['address'],
-    });
+// ── STATE ───────────────────────────────────────────────────────────────
+let selectedAddress = null;
 
-    autocomplete.addListener('place_changed', () => {
-      const place = autocomplete.getPlace();
-      if (place && place.formatted_address) {
-        selectedAddress = place.formatted_address;
-        confirmBtn.disabled = false;
-      }
-    });
+// ── INIT ────────────────────────────────────────────────────────────────
+const input      = document.getElementById('addressInput');
+const confirmBtn = document.getElementById('confirmBtn');
+
+input.addEventListener('input', () => {
+  selectedAddress = null;
+  confirmBtn.disabled = true;
+});
+
+confirmBtn.addEventListener('click', () => {
+  if (!selectedAddress) return;
+  runCheck(selectedAddress);
+});
+
+// ── GOOGLE PLACES ───────────────────────────────────────────────────────
+function waitForGoogle() {
+  if (window.google && window.google.maps && window.google.maps.places) {
+    initAutocomplete();
+  } else {
+    setTimeout(waitForGoogle, 300);
   }
+}
+waitForGoogle();
 
-  // Handle manual typing reset
-  input.addEventListener('input', () => {
-    selectedAddress = null;
-    confirmBtn.disabled = true;
+function initAutocomplete() {
+  const autocomplete = new google.maps.places.Autocomplete(input, {
+    componentRestrictions: { country: 'US' },
+    fields: ['formatted_address'],
+    types: ['address'],
   });
 
-  // Wait for Google to load
-  window.addEventListener('load', () => {
-    const checkGoogle = setInterval(() => {
-      if (window.google && window.google.maps && window.google.maps.places) {
-        initAutocomplete();
-        clearInterval(checkGoogle);
-      }
-    }, 200);
-  });
-
-  confirmBtn.addEventListener('click', async () => {
-    if (!selectedAddress) return;
-    
-    confirmBtn.disabled = true;
-    confirmBtn.textContent = 'Checking...';
-    document.getElementById('resultSection').style.display = 'none';
-
-    try {
-      const response = await fetch('/api/check-address', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: selectedAddress }),
-      });
-
-      const result = await response.json();
-      document.getElementById('resultSection').style.display = 'block';
-
-      if (result.matched) {
-        document.getElementById('matchedPanel').style.display = 'block';
-        document.getElementById('notMatchedPanel').style.display = 'none';
-        document.getElementById('villageDisplay').textContent = `Your address is in the Village of ${result.village}.`;
-      } else {
-        document.getElementById('matchedPanel').style.display = 'none';
-        document.getElementById('notMatchedPanel').style.display = 'block';
-      }
-    } catch (err) {
-      console.error('Error:', err);
-      alert('Something went wrong checking the address.');
-    } finally {
+  autocomplete.addListener('place_changed', () => {
+    const place = autocomplete.getPlace();
+    if (place && place.formatted_address) {
+      selectedAddress = place.formatted_address;
       confirmBtn.disabled = false;
-      confirmBtn.textContent = 'Confirm';
     }
   });
+}
+
+// ── ADDRESS CHECK ───────────────────────────────────────────────────────
+async function runCheck(address) {
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = 'Checking...';
+
+  try {
+    const response = await fetch('/api/check-address', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address }),
+    });
+
+    if (!response.ok) throw new Error('API returned ' + response.status);
+
+    const result = await response.json();
+    renderResults(result.matched, address);
+
+  } catch (err) {
+    console.error('Check failed:', err);
+    renderError();
+  }
+
+  confirmBtn.textContent = 'Check My Address';
+  confirmBtn.disabled = false;
+}
+
+// ── RENDER ──────────────────────────────────────────────────────────────
+function renderResults(matched, address) {
+  const section = document.getElementById('resultSection');
+
+  // status banner
+  let bannerHTML;
+  if (matched) {
+    bannerHTML = `
+      <div class="status-banner matched">
+        <div class="banner-icon">&#10003;</div>
+        <div class="banner-title">You qualify for CA Resident rates!</div>
+        <div class="banner-sub">Your address is on CA-assessed property. You're eligible for significantly discounted membership pricing — see your options below.</div>
+      </div>`;
+  } else {
+    bannerHTML = `
+      <div class="status-banner not-matched">
+        <div class="banner-icon">&#128075;</div>
+        <div class="banner-title">Welcome — here are your membership options.</div>
+        <div class="banner-sub">Your address is not on CA-assessed property. Standard membership rates apply. See what's available below.</div>
+      </div>`;
+  }
+
+  // membership cards
+  let cardsHTML = '<div class="cards-label">Choose a membership</div><div class="membership-cards">';
+
+  MEMBERSHIPS.forEach(function(mem) {
+    var isFeatured = (mem.badge === 'Most Popular') ? ' featured' : '';
+    var badgeHTML  = mem.badge ? '<div class="card-badge">' + mem.badge + '</div>' : '';
+    var savingsHTML = '';
+    var priceBlockHTML;
+
+    if (matched) {
+      var savings = Math.round(((mem.nonResidentPrice - mem.residentPrice) / mem.nonResidentPrice) * 100);
+      priceBlockHTML =
+        '<div class="price-block">' +
+          '<div class="price-resident">$' + mem.residentPrice + '<span>/mo</span></div>' +
+          '<div class="price-nonresident">$' + mem.nonResidentPrice + '/mo</div>' +
+        '</div>';
+      savingsHTML = '<div class="savings-pill">You save ' + savings + '% vs. standard rate</div>';
+    } else {
+      priceBlockHTML =
+        '<div class="price-block nonresident-mode">' +
+          '<div class="price-resident">$' + mem.nonResidentPrice + '<span>/mo</span></div>' +
+          '<div class="price-nonresident"></div>' +
+        '</div>';
+    }
+
+    var featuresHTML = mem.features.map(function(f) { return '<li>' + f + '</li>'; }).join('');
+
+    cardsHTML +=
+      '<div class="mem-card' + isFeatured + '">' +
+        '<div class="card-header">' +
+          '<div class="card-title-wrap">' +
+            '<div class="card-title">' + mem.title + '</div>' +
+            badgeHTML +
+          '</div>' +
+          priceBlockHTML +
+        '</div>' +
+        '<ul class="card-features">' + featuresHTML + '</ul>' +
+        savingsHTML +
+      '</div>';
+  });
+
+  cardsHTML += '</div>';
+
+  // CTA
+  var ctaHTML =
+    '<div class="cta-row">' +
+      '<a href="https://columbiaassociation.org/sports-recreation/membership/" target="_blank">Get Started with CA</a>' +
+      '<span class="cta-sub">Pricing valid through April 30, 2026 &middot; Individual rates shown</span>' +
+    '</div>';
+
+  section.innerHTML = bannerHTML + cardsHTML + ctaHTML;
+  section.style.display = 'block';
+}
+
+function renderError() {
+  var section = document.getElementById('resultSection');
+  section.innerHTML =
+    '<div class="status-banner not-matched">' +
+      '<div class="banner-icon">&#9888;&#65039;</div>' +
+      '<div class="banner-title">Something went wrong.</div>' +
+      '<div class="banner-sub">Please try again, or contact us at 410-715-3000.</div>' +
+    '</div>';
+  section.style.display = 'block';
+}
 </script>
 
 </body>
