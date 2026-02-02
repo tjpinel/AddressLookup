@@ -4,18 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Address Lookup</title>
-  <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
+
+  <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBreE7Ccp95zJ0hF3pmrn1U5l7RSictGl8&libraries=places"></script>
+
   <style>
-    body { font-family: 'Segoe UI', sans-serif; background: #f5f0e8; padding: 80px 20px; color: #2c2c2c; display: flex; justify-content: center; }
+    /* RESTORING YOUR ORIGINAL STYLES */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f5f0e8; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 80px 20px; color: #2c2c2c; }
     .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); padding: 48px 40px; width: 100%; max-width: 540px; }
-    h1 { color: #2d4a3e; margin-bottom: 8px; }
-    .subtitle { color: #7a7a7a; margin-bottom: 32px; }
-    #addressInput { width: 100%; padding: 14px; border: 2px solid #ddd; border-radius: 8px; margin-bottom: 20px; outline: none; }
-    #addressInput:focus { border-color: #2d4a3e; }
-    #confirmBtn { padding: 12px 32px; background: #2d4a3e; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; }
-    #confirmBtn:disabled { opacity: 0.4; }
-    #resultSection { display: none; margin-top: 30px; }
-    .panel { padding: 20px; border-radius: 10px; line-height: 1.6; display: none; }
+    h1 { font-size: 1.8rem; color: #2d4a3e; margin-bottom: 8px; font-weight: 600; }
+    .subtitle { color: #7a7a7a; font-size: 0.95rem; margin-bottom: 32px; }
+    label { display: block; font-size: 0.85rem; font-weight: 600; color: #4a4a4a; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    #addressInput { width: 100%; padding: 14px 16px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; outline: none; background: #fafafa; margin-bottom: 20px; }
+    #addressInput:focus { border-color: #2d4a3e; background: #fff; }
+    #confirmBtn { padding: 12px 32px; background: #2d4a3e; color: #fff; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; width: 100%; transition: opacity 0.2s; }
+    #confirmBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+    
+    /* Result Panels */
+    #resultSection { display: none; margin-top: 36px; padding-top: 28px; border-top: 2px solid #eee; }
+    .result-panel { padding: 24px; border-radius: 10px; font-size: 1rem; line-height: 1.6; display: none; }
     #matchedPanel { background: #eef5f2; border: 1px solid #c5ddd3; color: #1e3528; }
     #notMatchedPanel { background: #fdf3f0; border: 1px solid #e8c4b8; color: #6b3a2a; }
   </style>
@@ -23,83 +30,102 @@
 <body>
 
 <div class="card">
-  <h1>Address Lookup</h1>
-  <p class="subtitle">Select your address from the suggestions.</p>
-  <input type="text" id="addressInput" placeholder="Start typing your address..." autocomplete="off" />
+  <h1>What is your address?</h1>
+  <p class="subtitle">Start typing and select your address from the suggestions.</p>
+
+  <label for="addressInput">Address</label>
+  <input type="text" id="addressInput" placeholder="e.g. 123 Main St, Columbia, MD" autocomplete="off" />
+
   <button id="confirmBtn" disabled>Confirm</button>
 
   <div id="resultSection">
-    <div id="matchedPanel" class="panel">
-      <strong>✅ Success!</strong><br>
-      <span id="villageInfo"></span>
+    <div class="result-panel" id="matchedPanel">
+      <div style="font-size: 1.6rem;">✅</div>
+      <div style="font-weight: 700; font-size: 1.1rem; margin: 6px 0;">Great news — you're on the list!</div>
+      <div id="villageDisplay"></div>
     </div>
-    <div id="notMatchedPanel" class="panel">
-      <strong>❌ Not Found</strong><br>
-      Sorry, that address is not on our current list.
+
+    <div class="result-panel" id="notMatchedPanel">
+      <div style="font-size: 1.6rem;">❌</div>
+      <div style="font-weight: 700; font-size: 1.1rem; margin: 6px 0;">Sorry, address not found.</div>
+      <div>We couldn't find this address in our Maryland database.</div>
     </div>
   </div>
 </div>
 
 <script>
-let selectedAddress = null;
-const input = document.getElementById('addressInput');
-const confirmBtn = document.getElementById('confirmBtn');
+  let selectedAddress = null;
+  const input = document.getElementById('addressInput');
+  const confirmBtn = document.getElementById('confirmBtn');
 
-function initAutocomplete() {
-  const autocomplete = new google.maps.places.Autocomplete(input, {
-    componentRestrictions: { country: 'US' },
-    fields: ['formatted_address', 'address_components'],
-    types: ['address']
-  });
-
-  autocomplete.addListener('place_changed', () => {
-    const place = autocomplete.getPlace();
-    if (place.formatted_address) {
-      selectedAddress = place.formatted_address;
-      confirmBtn.disabled = false;
-    }
-  });
-}
-
-// Wait for Google to load
-window.onload = () => {
-  const checkGoogle = setInterval(() => {
-    if (window.google) {
-      initAutocomplete();
-      clearInterval(checkGoogle);
-    }
-  }, 100);
-};
-
-confirmBtn.onclick = async () => {
-  confirmBtn.disabled = true;
-  confirmBtn.textContent = 'Searching...';
-  
-  try {
-    const response = await fetch('/api/check-address', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ address: selectedAddress })
+  // Initialize Google Autocomplete
+  function initAutocomplete() {
+    if (!window.google) return;
+    const autocomplete = new google.maps.places.Autocomplete(input, {
+      componentRestrictions: { country: 'US' },
+      fields: ['formatted_address'],
+      types: ['address'],
     });
-    
-    const result = await response.json();
-    document.getElementById('resultSection').style.display = 'block';
-    
-    if (result.matched) {
-      document.getElementById('matchedPanel').style.display = 'block';
-      document.getElementById('notMatchedPanel').style.display = 'none';
-      document.getElementById('villageInfo').textContent = `Your address is in the Village of ${result.village}.`;
-    } else {
-      document.getElementById('matchedPanel').style.display = 'none';
-      document.getElementById('notMatchedPanel').style.display = 'block';
-    }
-  } catch (e) {
-    alert("Error checking address.");
-  } finally {
-    confirmBtn.disabled = false;
-    confirmBtn.textContent = 'Confirm';
+
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace();
+      if (place && place.formatted_address) {
+        selectedAddress = place.formatted_address;
+        confirmBtn.disabled = false;
+      }
+    });
   }
-};
+
+  // Handle manual typing reset
+  input.addEventListener('input', () => {
+    selectedAddress = null;
+    confirmBtn.disabled = true;
+  });
+
+  // Wait for Google to load
+  window.addEventListener('load', () => {
+    const checkGoogle = setInterval(() => {
+      if (window.google && window.google.maps && window.google.maps.places) {
+        initAutocomplete();
+        clearInterval(checkGoogle);
+      }
+    }, 200);
+  });
+
+  confirmBtn.addEventListener('click', async () => {
+    if (!selectedAddress) return;
+    
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Checking...';
+    document.getElementById('resultSection').style.display = 'none';
+
+    try {
+      const response = await fetch('/api/check-address', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: selectedAddress }),
+      });
+
+      const result = await response.json();
+      document.getElementById('resultSection').style.display = 'block';
+
+      if (result.matched) {
+        document.getElementById('matchedPanel').style.display = 'block';
+        document.getElementById('notMatchedPanel').style.display = 'none';
+        document.getElementById('villageDisplay').textContent = `Your address is in the Village of ${result.village}.`;
+      } else {
+        document.getElementById('matchedPanel').style.display = 'none';
+        document.getElementById('notMatchedPanel').style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      alert('Something went wrong checking the address.');
+    } finally {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Confirm';
+    }
+  });
 </script>
+
 </body>
 </html>
